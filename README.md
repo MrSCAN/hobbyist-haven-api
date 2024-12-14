@@ -1,69 +1,135 @@
-# Welcome to your Lovable project
+# Hobbyist Haven API
 
-## Project info
+A Flask-based REST API for managing hobby projects and user accounts.
 
-**URL**: https://lovable.dev/projects/0853901f-652d-47a8-b158-bdc2b6ad7aac
+## Prerequisites
 
-## How can I edit this code?
+- Python 3.8+
+- pip
+- SQLite
 
-There are several ways of editing your application.
+## Setup & Installation
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/0853901f-652d-47a8-b158-bdc2b6ad7aac) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd hobbyist-haven-api
 ```
 
-**Edit a file directly in GitHub**
+2. Create and activate a virtual environment:
+```bash
+python -m venv .ev
+source .ev/bin/activate  # On Windows use: .ev\Scripts\activate
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-**Use GitHub Codespaces**
+4. Initialize the database:
+```bash
+prisma db push
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+5. Set up environment variables by creating a `.env` file:
+```
+PORT=3000
+CORS_ORIGIN=http://localhost:8080
+JWT_SECRET=your_jwt_secret_key_here
+```
 
-## What technologies are used for this project?
+6. Run the application:
+```bash
+python app.py
+```
 
-This project is built with .
+The API will be available at `http://localhost:3000`
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## API Endpoints
 
-## How can I deploy this project?
+### Authentication
 
-Simply open [Lovable](https://lovable.dev/projects/0853901f-652d-47a8-b158-bdc2b6ad7aac) and click on Share -> Publish.
+- **POST /api/users/register**
+  - Register a new user
+  - Body: `{ "email": "user@example.com", "password": "password", "name": "User Name" }`
 
-## I want to use a custom domain - is that possible?
+- **POST /api/users/login**
+  - Login user
+  - Body: `{ "email": "user@example.com", "password": "password" }`
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+### Projects
+
+- **GET /api/projects**
+  - Get all projects
+  - No authentication required
+
+- **GET /api/projects/<project_id>**
+  - Get a specific project
+  - No authentication required
+
+- **POST /api/projects**
+  - Create a new project
+  - Requires authentication
+  - Body: 
+    ```json
+    {
+      "title": "Project Title",
+      "description": "Project Description",
+      "techStack": ["Tech1", "Tech2"],
+      "repoUrls": ["url1", "url2"],
+      "imageUrl": "optional-image-url",
+      "documentation": "optional-documentation",
+      "youtubeUrl": "optional-youtube-url",
+      "stages": [
+        {
+          "title": "Stage 1",
+          "description": "Stage Description"
+        }
+      ]
+    }
+    ```
+
+- **PUT /api/projects/<project_id>**
+  - Update a project
+  - Requires authentication
+  - Body: Same as POST
+
+- **DELETE /api/projects/<project_id>**
+  - Delete a project
+  - Requires authentication
+
+### Users
+
+- **GET /api/users**
+  - Get all users
+  - Requires admin authentication
+
+- **GET /api/users/<user_id>**
+  - Get user role
+  - Requires authentication
+
+- **PUT /api/users/<user_id>/role**
+  - Update user role
+  - Requires admin authentication
+  - Body: `{ "role": "ADMIN" }`
+
+## Authentication
+
+The API uses JWT tokens for authentication. After logging in or registering, you'll receive a token that should be included in the Authorization header of subsequent requests:
+
+```
+Authorization: Bearer <your-token>
+```
+
+## Development
+
+The API uses:
+- Flask for the web framework
+- Prisma for database ORM
+- JWT for authentication
+- SQLite for database
+
+## API Documentation
+
+API documentation is available at `/api-docs` when running the server.

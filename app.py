@@ -4,12 +4,24 @@ from routes.projects import projects_bp
 from routes.users import users_bp
 from flasgger import Swagger
 from dotenv import load_dotenv
+from prisma import Prisma
 import os
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app, origins=os.getenv('CORS_ORIGIN', 'http://localhost:8080'), supports_credentials=True)
+
+# Initialize Prisma
+prisma = Prisma()
+
+@app.before_first_request
+def init_prisma():
+    prisma.connect()
+
+@app.teardown_appcontext
+def shutdown_prisma(exception=None):
+    prisma.disconnect()
 
 # Swagger configuration
 swagger_config = {
