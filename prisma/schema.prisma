@@ -24,8 +24,8 @@ model Project {
   id            String   @id @default(uuid())
   title         String
   description   String
-  techStack     String[]
-  repoUrls      String[]
+  techStack     String   // Will store JSON string
+  repoUrls      String   // Will store JSON string
   imageUrl      String?
   documentation String?
   youtubeUrl    String?

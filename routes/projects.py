@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, g
 from middleware.auth import require_auth
 from prisma import Prisma
 from typing import Dict, Any
+import json
 
 projects_bp = Blueprint('projects', __name__)
 prisma = Prisma()
@@ -20,6 +21,12 @@ async def get_projects():
             "stages": True
         }
     )
+    
+    # Deserialize JSON strings back to lists
+    for project in projects:
+        project.techStack = json.loads(project.techStack)
+        project.repoUrls = json.loads(project.repoUrls)
+    
     return jsonify(projects)
 
 @projects_bp.route('/<project_id>', methods=['GET'])
@@ -47,7 +54,11 @@ async def get_project(project_id: str):
     
     if not project:
         return jsonify({"message": "Project not found"}), 404
-        
+    
+    # Deserialize JSON strings back to lists
+    project.techStack = json.loads(project.techStack)
+    project.repoUrls = json.loads(project.repoUrls)
+    
     return jsonify(project)
 
 @projects_bp.route('/', methods=['POST'])
@@ -67,13 +78,17 @@ async def create_project():
     
     if not data.get('title') or not data.get('description'):
         return jsonify({"message": "Title and description are required"}), 400
-        
+    
+    # Serialize lists to JSON strings
+    tech_stack = json.dumps(data.get('techStack', []))
+    repo_urls = json.dumps(data.get('repoUrls', []))
+    
     project = await prisma.project.create(
         data={
             "title": data['title'],
             "description": data['description'],
-            "techStack": data.get('techStack', []),
-            "repoUrls": data.get('repoUrls', []),
+            "techStack": tech_stack,
+            "repoUrls": repo_urls,
             "imageUrl": data.get('imageUrl', ''),
             "documentation": data.get('documentation', ''),
             "youtubeUrl": data.get('youtubeUrl'),
@@ -87,6 +102,10 @@ async def create_project():
             "stages": True
         }
     )
+    
+    # Deserialize JSON strings back to lists for response
+    project.techStack = json.loads(project.techStack)
+    project.repoUrls = json.loads(project.repoUrls)
     
     return jsonify(project), 201
 
@@ -110,13 +129,17 @@ async def update_project(project_id: str):
     """
     data: Dict[str, Any] = request.get_json()
     
+    # Serialize lists to JSON strings
+    tech_stack = json.dumps(data.get('techStack', []))
+    repo_urls = json.dumps(data.get('repoUrls', []))
+    
     project = await prisma.project.update(
         where={"id": project_id},
         data={
             "title": data.get('title'),
             "description": data.get('description'),
-            "techStack": data.get('techStack'),
-            "repoUrls": data.get('repoUrls'),
+            "techStack": tech_stack,
+            "repoUrls": repo_urls,
             "imageUrl": data.get('imageUrl'),
             "documentation": data.get('documentation'),
             "youtubeUrl": data.get('youtubeUrl'),
@@ -130,6 +153,10 @@ async def update_project(project_id: str):
             "stages": True
         }
     )
+    
+    # Deserialize JSON strings back to lists for response
+    project.techStack = json.loads(project.techStack)
+    project.repoUrls = json.loads(project.repoUrls)
     
     return jsonify(project)
 
