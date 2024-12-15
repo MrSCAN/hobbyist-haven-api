@@ -12,32 +12,18 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app, 
-     resources={r"/*": {"origins": "*"}},
+     origins=["http://localhost:8080"],
+     allow_credentials=True,
      supports_credentials=True,
      allow_headers=["Content-Type", "Authorization"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     expose_headers=["Content-Range", "X-Content-Range"])
 
 db = Prisma()
 db.connect()
 register(db)
 
-# Swagger configuration
-swagger_config = {
-    "headers": [],
-    "specs": [
-        {
-            "endpoint": 'apispec',
-            "route": '/apispec.json',
-            "rule_filter": lambda rule: True,
-            "model_filter": lambda tag: True,
-        }
-    ],
-    "static_url_path": "/flasgger_static",
-    "swagger_ui": True,
-    "specs_route": "/api-docs"
-}
-
-swagger = Swagger(app, config=swagger_config)
+# ... keep existing code (Swagger configuration)
 
 # Register blueprints
 app.register_blueprint(projects_bp, url_prefix='/api/projects')
@@ -47,6 +33,14 @@ app.register_blueprint(users_bp, url_prefix='/api/users')
 def health_check():
     """Health check endpoint."""
     return jsonify({"status": "OK", "message": "Service is up and running!"})
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:8080')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 @app.errorhandler(500)
 def handle_error(error):
