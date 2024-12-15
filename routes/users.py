@@ -33,11 +33,13 @@ async def register():
         if existing_user:
             return jsonify({"message": "Email already registered"}), 400
 
+        hashed_password = generate_password_hash(data['password'])
+        
         user = await User.prisma().create(
             data={
                 "id": str(uuid.uuid4()),
                 "email": data['email'],
-                "password": generate_password_hash(data['password']),
+                "password": hashed_password,
                 "name": data['name'],
                 "role": "USER"
             }
