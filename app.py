@@ -1,5 +1,5 @@
 import asyncio
-from flask import Flask, jsonify, g
+from flask import Flask, jsonify, g, request, make_response
 from flask_cors import CORS
 from routes.projects import projects_bp
 from routes.users import users_bp
@@ -12,18 +12,23 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app, 
-     origins=["http://localhost:8080"],
-     allow_credentials=True,
-     supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     expose_headers=["Content-Range", "X-Content-Range"])
+     resources={
+         r"/api/*": {
+             "origins": ["http://localhost:8080"],
+             "allow_credentials": True,
+             "allow_headers": ["Content-Type", "Authorization"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "expose_headers": ["Content-Range", "X-Content-Range"],
+             "supports_credentials": True,
+             "max_age": 120  # Cache preflight response for 2 minutes
+         }
+     })
 
 db = Prisma()
 db.connect()
 register(db)
 
-# ... keep existing code (Swagger configuration)
+swagger = Swagger(app)
 
 # Register blueprints
 app.register_blueprint(projects_bp, url_prefix='/api/projects')
@@ -34,13 +39,15 @@ def health_check():
     """Health check endpoint."""
     return jsonify({"status": "OK", "message": "Service is up and running!"})
 
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:8080')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    return response
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:8080")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response
 
 @app.errorhandler(500)
 def handle_error(error):
