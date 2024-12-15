@@ -1,11 +1,11 @@
 from functools import wraps
 from flask import request, jsonify, g
-from prisma import Prisma
+from prisma.models import User
 import jwt
 import os
 from datetime import datetime, timedelta
 
-prisma = Prisma()
+
 JWT_SECRET = os.getenv('JWT_SECRET', 'your-secret-key-here')
 
 def create_token(user_id: str) -> str:
@@ -17,22 +17,22 @@ def create_token(user_id: str) -> str:
 
 def require_auth(f):
     @wraps(f)
-    async def decorated_function(*args, **kwargs):
+    def decorated_function(*args, **kwargs):
         try:
             token = request.headers.get('Authorization', '').replace('Bearer ', '')
             if not token:
                 return jsonify({"message": "No token provided"}), 401
-            
+
             payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-            user = await prisma.user.find_unique(
+            user = User.prisma().find_unique(
                 where={"id": payload['user_id']}
             )
-            
+
             if not user:
                 return jsonify({"message": "User not found"}), 401
-                
+
             g.user = user
-            return await f(*args, **kwargs)
+            return f(*args, **kwargs)
         except jwt.ExpiredSignatureError:
             return jsonify({"message": "Token has expired"}), 401
         except jwt.InvalidTokenError:
@@ -44,11 +44,11 @@ def require_auth(f):
 def require_admin(f):
     @wraps(f)
     @require_auth
-    async def decorated_function(*args, **kwargs):
+    def decorated_function(*args, **kwargs):
         try:
             if g.user.role != 'ADMIN':
                 return jsonify({"message": "Forbidden: Admin access required"}), 403
-            return await f(*args, **kwargs)
+            return f(*args, **kwargs)
         except Exception as e:
             return jsonify({"message": "Error checking admin status"}), 500
     return decorated_function

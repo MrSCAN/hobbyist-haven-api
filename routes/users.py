@@ -1,11 +1,10 @@
 from flask import Blueprint, jsonify, request, g
 from middleware.auth import require_auth, require_admin, create_token
-from prisma import Prisma
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
+from prisma.models import User
 
 users_bp = Blueprint('users', __name__)
-prisma = Prisma()
 
 @users_bp.route('/register', methods=['POST'])
 async def register():
@@ -19,18 +18,18 @@ async def register():
     """
     try:
         data = request.get_json()
-        
+
         if not data.get('email') or not data.get('password') or not data.get('name'):
             return jsonify({"message": "Email, password and name are required"}), 400
-            
-        existing_user = await prisma.user.find_unique(
+
+        existing_user = await User.prisma().find_unique(
             where={"email": data['email']}
         )
-        
+
         if existing_user:
             return jsonify({"message": "Email already registered"}), 400
-            
-        user = await prisma.user.create(
+
+        user = await User.prisma().create(
             data={
                 "id": str(uuid.uuid4()),
                 "email": data['email'],
@@ -39,7 +38,7 @@ async def register():
                 "role": "USER"
             }
         )
-        
+
         token = create_token(user.id)
         return jsonify({"token": token, "user": {
             "id": user.id,
@@ -62,17 +61,17 @@ async def login():
     """
     try:
         data = request.get_json()
-        
+
         if not data.get('email') or not data.get('password'):
             return jsonify({"message": "Email and password are required"}), 400
-            
-        user = await prisma.user.find_unique(
+
+        user = await User.prisma().find_unique(
             where={"email": data['email']}
         )
-        
+
         if not user or not check_password_hash(user.password, data['password']):
             return jsonify({"message": "Invalid credentials"}), 401
-            
+
         token = create_token(user.id)
         return jsonify({"token": token, "user": {
             "id": user.id,
@@ -101,14 +100,14 @@ async def get_user_role(user_id: str):
       404:
         description: User not found
     """
-    user = await prisma.user.find_unique(
+    user = await User.prisma().find_unique(
         where={"id": user_id},
         select={"role": True}
     )
-    
+
     if not user:
         return jsonify({"message": "User not found"}), 404
-        
+
     return jsonify(user)
 
 @users_bp.route('/<user_id>/role', methods=['PUT'])
@@ -130,7 +129,7 @@ async def update_user_role(user_id: str):
         description: Forbidden
     """
     data = request.get_json()
-    user = await prisma.user.update(
+    user = await User.prisma().update(
         where={"id": user_id},
         data={"role": data['role']}
     )
@@ -149,7 +148,7 @@ async def get_users():
       403:
         description: Forbidden
     """
-    users = await prisma.user.find_many(
+    users = User.prisma().find_many(
         select={
             "id": True,
             "email": True,

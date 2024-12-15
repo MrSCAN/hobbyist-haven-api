@@ -1,11 +1,10 @@
 from flask import Blueprint, jsonify, request, g
 from middleware.auth import require_auth
-from prisma import Prisma
 from typing import Dict, Any
 import json
+from prisma.models import Project
 
 projects_bp = Blueprint('projects', __name__)
-prisma = Prisma()
 
 @projects_bp.route('/', methods=['GET'])
 async def get_projects():
@@ -15,18 +14,18 @@ async def get_projects():
       200:
         description: List of all projects
     """
-    projects = await prisma.project.find_many(
+    projects = Project.prisma().find_many(
         include={
             "author": True,
             "stages": True
         }
     )
-    
+
     # Deserialize JSON strings back to lists
     for project in projects:
         project.techStack = json.loads(project.techStack)
         project.repoUrls = json.loads(project.repoUrls)
-    
+
     return jsonify(projects)
 
 @projects_bp.route('/<project_id>', methods=['GET'])
@@ -44,21 +43,21 @@ async def get_project(project_id: str):
       404:
         description: Project not found
     """
-    project = await prisma.project.find_unique(
+    project = await Project.prisma().find_unique(
         where={"id": project_id},
         include={
             "author": True,
             "stages": True
         }
     )
-    
+
     if not project:
         return jsonify({"message": "Project not found"}), 404
-    
+
     # Deserialize JSON strings back to lists
     project.techStack = json.loads(project.techStack)
     project.repoUrls = json.loads(project.repoUrls)
-    
+
     return jsonify(project)
 
 @projects_bp.route('/', methods=['POST'])
@@ -75,15 +74,15 @@ async def create_project():
         description: Invalid request data
     """
     data: Dict[str, Any] = request.get_json()
-    
+
     if not data.get('title') or not data.get('description'):
         return jsonify({"message": "Title and description are required"}), 400
-    
+
     # Serialize lists to JSON strings
     tech_stack = json.dumps(data.get('techStack', []))
     repo_urls = json.dumps(data.get('repoUrls', []))
-    
-    project = await prisma.project.create(
+
+    project = await Project.prisma().create(
         data={
             "title": data['title'],
             "description": data['description'],
@@ -102,11 +101,11 @@ async def create_project():
             "stages": True
         }
     )
-    
+
     # Deserialize JSON strings back to lists for response
     project.techStack = json.loads(project.techStack)
     project.repoUrls = json.loads(project.repoUrls)
-    
+
     return jsonify(project), 201
 
 @projects_bp.route('/<project_id>', methods=['PUT'])
@@ -128,12 +127,12 @@ async def update_project(project_id: str):
         description: Project not found
     """
     data: Dict[str, Any] = request.get_json()
-    
+
     # Serialize lists to JSON strings
     tech_stack = json.dumps(data.get('techStack', []))
     repo_urls = json.dumps(data.get('repoUrls', []))
-    
-    project = await prisma.project.update(
+
+    project = await Project.prisma().update(
         where={"id": project_id},
         data={
             "title": data.get('title'),
@@ -153,11 +152,11 @@ async def update_project(project_id: str):
             "stages": True
         }
     )
-    
+
     # Deserialize JSON strings back to lists for response
     project.techStack = json.loads(project.techStack)
     project.repoUrls = json.loads(project.repoUrls)
-    
+
     return jsonify(project)
 
 @projects_bp.route('/<project_id>', methods=['DELETE'])
@@ -176,8 +175,8 @@ async def delete_project(project_id: str):
       204:
         description: Project deleted successfully
     """
-    await prisma.project.delete(
+    await Project.prisma().project.delete(
         where={"id": project_id}
     )
-    
+
     return '', 204

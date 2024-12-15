@@ -1,10 +1,11 @@
-from flask import Flask, jsonify, request
+import asyncio
+from flask import Flask, jsonify, g
 from flask_cors import CORS
 from routes.projects import projects_bp
 from routes.users import users_bp
 from flasgger import Swagger
 from dotenv import load_dotenv
-from prisma import Prisma
+from prisma import Prisma, register
 import os
 
 load_dotenv()
@@ -12,16 +13,9 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, origins=os.getenv('CORS_ORIGIN', 'http://localhost:8080'), supports_credentials=True)
 
-# Initialize Prisma
-prisma = Prisma()
-
-@app.before_first_request
-def init_prisma():
-    prisma.connect()
-
-@app.teardown_appcontext
-def shutdown_prisma(exception=None):
-    prisma.disconnect()
+db = Prisma()
+db.connect()
+register(db)
 
 # Swagger configuration
 swagger_config = {
@@ -47,12 +41,7 @@ app.register_blueprint(users_bp, url_prefix='/api/users')
 
 @app.route('/')
 def health_check():
-    """Health check endpoint
-    ---
-    responses:
-      200:
-        description: Service status
-    """
+    """Health check endpoint."""
     return jsonify({"status": "OK", "message": "Service is up and running!"})
 
 @app.errorhandler(500)
