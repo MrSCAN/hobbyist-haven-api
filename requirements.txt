@@ -8,3 +8,4 @@ flask-bcrypt==1.0.1
 pyjwt==2.8.0
 python-jose==3.3.0
 flask-async
+werkzeug>=3.0.0

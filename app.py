@@ -11,7 +11,11 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=os.getenv('CORS_ORIGIN', 'http://localhost:8080'), supports_credentials=True)
+CORS(app, 
+     resources={r"/api/*": {"origins": "*"}},
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 db = Prisma()
 db.connect()
@@ -46,7 +50,13 @@ def health_check():
 
 @app.errorhandler(500)
 def handle_error(error):
-    return jsonify({"message": "Something went wrong!"}), 500
+    app.logger.error(f"Internal Server Error: {str(error)}")
+    return jsonify({"message": "Internal Server Error", "error": str(error)}), 500
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    app.logger.error(f"Unhandled Exception: {str(error)}")
+    return jsonify({"message": "Internal Server Error", "error": str(error)}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 3000))

@@ -1,8 +1,9 @@
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, jsonify, request, g, current_app
 from middleware.auth import require_auth, require_admin, create_token
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 from prisma.models import User
+import json
 
 users_bp = Blueprint('users', __name__)
 
@@ -18,6 +19,9 @@ async def register():
     """
     try:
         data = request.get_json()
+        
+        if not data:
+            return jsonify({"message": "No data provided"}), 400
 
         if not data.get('email') or not data.get('password') or not data.get('name'):
             return jsonify({"message": "Email, password and name are required"}), 400
@@ -40,14 +44,19 @@ async def register():
         )
 
         token = create_token(user.id)
-        return jsonify({"token": token, "user": {
-            "id": user.id,
-            "email": user.email,
-            "name": user.name,
-            "role": user.role
-        }}), 201
+        return jsonify({
+            "token": token,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "role": user.role
+            }
+        }), 201
+
     except Exception as e:
-        return jsonify({"message": "Error creating user"}), 500
+        current_app.logger.error(f"Error in register: {str(e)}")
+        return jsonify({"message": "Error creating user", "error": str(e)}), 500
 
 @users_bp.route('/login', methods=['POST'])
 async def login():
