@@ -13,9 +13,8 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, 
      resources={
-         r"/api/*": {
-             "origins": ["http://localhost:8080"],
-             "allow_credentials": True,
+         r"/*": {
+             "origins": "*",
              "allow_headers": ["Content-Type", "Authorization"],
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "expose_headers": ["Content-Range", "X-Content-Range"],
@@ -43,10 +42,9 @@ def health_check():
 def handle_preflight():
     if request.method == "OPTIONS":
         response = make_response()
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:8080")
-        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-        response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
-        response.headers.add("Access-Control-Allow-Credentials", "true")
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "*")
+        response.headers.add("Access-Control-Allow-Methods", "*")
         return response
 
 @app.errorhandler(500)
