@@ -13,12 +13,11 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, 
      resources={
-         r"/*": {
+         r"/api/*": {
              "origins": "*",
              "allow_headers": ["Content-Type", "Authorization"],
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "expose_headers": ["Content-Range", "X-Content-Range"],
-             "supports_credentials": True,
              "max_age": 120  # Cache preflight response for 2 minutes
          }
      })
@@ -43,8 +42,8 @@ def handle_preflight():
     if request.method == "OPTIONS":
         response = make_response()
         response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add("Access-Control-Allow-Headers", "*")
-        response.headers.add("Access-Control-Allow-Methods", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         return response
 
 @app.errorhandler(500)
